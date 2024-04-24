@@ -17,29 +17,55 @@ private:
   struct TimerData
   {
     std::string name;
-    std::chrono::time_point<std::chrono::high_resolution_clock> start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> stop;
+
+    void start()
+    {
+      m_micros += static_cast<int64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+        m_stop - m_start).count());
+      m_start = std::chrono::high_resolution_clock::now();
+      m_stop = m_start;
+    }
+
+    void stop()
+    {
+      m_stop = std::chrono::high_resolution_clock::now();
+      m_micros += static_cast<int64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+        m_stop - m_start).count());
+      m_start = m_stop;
+    }
 
     int64_t getMicros() const
     {
-      return static_cast<int64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
-        stop - start).count());
+      return m_micros;
     }
+
+  private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_stop;
+    size_t m_micros{ 0 };
   };
 
 public:
-  size_t startTimer(const std::string& name)
+
+  // Add and start new timer.
+  size_t start(const std::string& name)
   {
     TimerData d;
     d.name = name;
-    d.start = std::chrono::high_resolution_clock::now();
+    d.start();
     m_timers.push_back(d);
     return m_timers.size() - 1;
   }
 
+  // Start already existing timer.
+  void start(size_t id)
+  {
+    m_timers[id].start();
+  }
+
   int64_t stopGetMicros(size_t id)
   {
-    m_timers[id].stop = std::chrono::high_resolution_clock::now();
+    m_timers[id].stop();
     return m_timers[id].getMicros();
   }
 
